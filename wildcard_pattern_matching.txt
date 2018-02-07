@@ -1,0 +1,165 @@
+/* package whatever; // don't place package name! */
+
+import java.util.*;
+import java.lang.*;
+import java.io.*;
+
+class wildcard{
+	private String str, pattern;
+	private int s_idx, p_idx;
+	private int[][] memo;
+
+	static final int NO_MATCH = 0;
+	static final int MATCH = 1;
+	static final int UNKNOWN = 2;
+	
+	final Boolean debug = false;
+
+
+    private static char memo_2_char(int x){
+        if (x == NO_MATCH)
+            return 'F';
+        else if (x == MATCH)
+            return 'T';
+        else
+            return '?';
+    }
+
+	public wildcard(String s, String p){
+		this.str = s;
+		this.pattern = p;
+		memo = new int[s.length() + 1][p.length() + 1];
+		for (int row = 0; row < s.length() + 1; row++)
+			for (int col = 0; col < p.length() + 1; col++)
+				memo[row][col] = UNKNOWN;
+
+
+
+		if(debug){
+		    System.out.print("debug: printing memo\n");
+			for (int row = 0; row < s.length() + 1; row++){
+				for (int col = 0; col < p.length() + 1; col++){
+					System.out.print(memo_2_char(memo[row][col]));
+					System.out.print('\t');
+				}
+				System.out.print('\n');
+			}
+    		System.out.print("=========================\n");
+    		if(debug) System.out.print("debug: constructor ended\n");
+		}
+	}
+
+	public String match(){
+		int result = find_match(this.str, this.pattern, this.str.length(), this.pattern.length());
+	    
+	    System.out.print(this.str);
+	    System.out.print(" : ");
+        System.out.print(this.pattern);
+        System.out.print("\t\t");
+// 	    System.out.print("========end=======\n");
+// 		for (int row = 0; row < this.str.length() + 1; row++){
+// 			for (int col = 0; col < this.pattern.length() + 1; col++){
+// 				System.out.print(memo_2_char(memo[row][col]));
+// 				System.out.print('\t');
+// 			}
+// 			System.out.print('\n');
+// 		}
+//         System.out.print("========end=======\n");
+        
+	    if (result == MATCH)
+			return "Match\n";
+		else
+			return "No match\n";
+	}
+
+	private int find_match(String str, String pat, int s_idx, int p_idx){
+
+        if (debug){
+            System.out.print("debug: string = " + str);
+            System.out.print('\n');
+            System.out.print("debug: pattern = " + pat);
+            System.out.print('\n');
+            String p_s,s_s;
+            if (p_idx > 0)
+                p_s = String.valueOf(pat.charAt(p_idx-1));
+            else
+                p_s = "None";
+            if (s_idx > 0)
+                s_s = String.valueOf(str.charAt(s_idx-1));
+            else
+                s_s = "None";                
+            System.out.print("debug: characters to compare [p,s] (p,s) = " + p_s + ',' + s_s + "\t(" + (p_idx) + ',' + (s_idx) + ")");
+            System.out.print('\n');
+            System.out.print("debug: printing memo\n");
+            System.out.print("=========================\n");
+			for (int row = 0; row < str.length() + 1; row++){
+				for (int col = 0; col < pat.length() + 1; col++){
+					System.out.print(memo_2_char(memo[row][col]));
+					System.out.print('\t');
+				}
+				System.out.print('\n');
+			}
+			System.out.print("=========================\n");
+        }
+        
+		// end condition 1: reached end of string & end of pattern
+	    if (s_idx == 0 && p_idx == 0)
+			this.memo[s_idx][p_idx] = MATCH;
+
+		// end condition 2: reached end of string & pattern has only '*' left (find out using recursion)
+		else if (s_idx == 0)
+		    if (pat.charAt(p_idx-1) == '*')
+		        this.memo[s_idx][p_idx] = find_match(str, pat, s_idx, p_idx-1);
+			else
+			    this.memo[s_idx][p_idx] = NO_MATCH;
+		
+		// end condition 2: reached end of pattern and string still has charcters	    
+	    else if (p_idx == 0)
+	        this.memo[s_idx][p_idx] = NO_MATCH;
+        
+		// look-up in memo
+		else if (this.memo[s_idx][p_idx] != UNKNOWN)
+			return this.memo[s_idx][p_idx];
+			
+		// recursive step
+		else{
+			// matching characters --> go backwards diagonally
+			if (str.charAt(s_idx-1) == pat.charAt(p_idx-1) || pat.charAt(p_idx-1) == '?')
+				this.memo[s_idx][p_idx] = find_match(str, pat, s_idx-1, p_idx-1);
+			// pattern has '*' --> check upper option and left option
+			else if (pat.charAt(p_idx-1) == '*'){
+				int res = find_match(str, pat, s_idx, p_idx-1) + find_match(str, pat, s_idx-1, p_idx);
+				if (res != NO_MATCH)
+				    this.memo[s_idx][p_idx] = MATCH;
+				else
+				    this.memo[s_idx][p_idx] = NO_MATCH;
+			}
+			// no matching characters --> insert NO_MATCH
+			else
+				this.memo[s_idx][p_idx] = NO_MATCH;
+		}
+
+		return this.memo[s_idx][p_idx];
+	}
+}
+
+public class main{
+	public static void main(String args[]){
+	    ArrayList<wildcard> al=new ArrayList<wildcard>();  
+	    al.add(new wildcard("a", "*"));
+	    al.add(new wildcard("a", "a"));
+	    al.add(new wildcard("a", "?"));
+	    al.add(new wildcard("b", "*"));
+	    al.add(new wildcard("a", "b"));
+	    al.add(new wildcard("ab", "*"));
+	    al.add(new wildcard("a", "***"));
+	    al.add(new wildcard("aba", "a*a"));
+	    al.add(new wildcard("a", "*b"));
+	    al.add(new wildcard("a", "b*"));
+	    al.add(new wildcard("a", "a*"));
+	    al.add(new wildcard("a", "*a"));
+	    
+	    for (wildcard w : al)
+		    System.out.print(w.match());
+	}
+}
